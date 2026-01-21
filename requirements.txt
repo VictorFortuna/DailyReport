@@ -1,9 +1,9 @@
 # Telegram Bot Framework
-aiogram==3.4.1
-aiohttp==3.9.1
+aiogram==3.1.1
+aiohttp==3.8.6
 
 # Google Sheets Integration
-gspread==6.0.0
+gspread==5.12.0
 oauth2client==4.1.3
 
 # Scheduling
@@ -21,3 +21,6 @@ pytz==2023.3
 
 # Logging
 colorlog==6.8.0
+
+# Fix for Render.com compatibility
+pydantic==1.10.13
