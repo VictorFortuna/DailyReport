@@ -1,5 +1,5 @@
-# Telegram Bot Framework
-aiogram==3.1.1
+# Telegram Bot Framework - using older version without pydantic 2.x dependency
+aiogram==3.0.0
 aiohttp==3.8.6
 
 # Google Sheets Integration
@@ -22,5 +22,5 @@ pytz==2023.3
 # Logging
 colorlog==6.8.0
 
-# Fix for Render.com compatibility
+# Stable pydantic without Rust compilation
 pydantic==1.10.13
