@@ -3,7 +3,7 @@
 """
 
 from aiogram import Router, F
-from aiogram.filters import CommandStart, StateFilter
+from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -178,6 +178,18 @@ async def help_handler(message: Message, db: DatabaseService):
         "❓ Остались вопросы? Выберите раздел ниже:",
         reply_markup=get_help_keyboard()
     )
+
+@router.message(Command("help"))
+async def cmd_help(message: Message, db: DatabaseService):
+    """Обработчик команды /help"""
+    await help_handler(message, db)
+
+@router.message(Command("status"))
+async def cmd_status(message: Message, db: DatabaseService):
+    """Обработчик команды /status"""
+    # Импортируем функцию из report.py
+    from bot.handlers.report import user_status
+    await user_status(message, db)
 
 # Обработчики callback для помощи
 @router.callback_query(F.data.startswith("help_"))

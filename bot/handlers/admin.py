@@ -29,15 +29,24 @@ def is_admin(user_id: int) -> bool:
 async def admin_panel(message: Message, db: DatabaseService):
     """Главная админ-панель"""
 
+    logger.info(f"Admin command called by user {message.from_user.id}")
+
     if not is_admin(message.from_user.id):
+        logger.warning(f"Unauthorized admin access attempt by {message.from_user.id}")
         await message.answer("❌ Доступ запрещён. Только для администраторов.")
         return
 
     today = datetime.now().strftime('%d.%m.%Y')
 
-    # Получаем базовую статистику
-    all_users = await db.get_all_users(active_only=True)
-    today_reports = await db.get_daily_reports(datetime.now().strftime('%Y-%m-%d'))
+    try:
+        # Получаем базовую статистику
+        all_users = await db.get_all_users(active_only=True)
+        today_reports = await db.get_daily_reports(datetime.now().strftime('%Y-%m-%d'))
+        logger.info(f"Admin stats: {len(all_users)} users, {len(today_reports)} reports")
+    except Exception as e:
+        logger.error(f"Error getting admin stats: {e}")
+        await message.answer("❌ Ошибка получения статистики. Проверьте логи.")
+        return
 
     await message.answer(
         f"👨‍💼 <b>Административная панель</b>\n\n"
