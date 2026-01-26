@@ -33,7 +33,7 @@ async def cmd_start(message: Message, state: FSMContext, db: DatabaseService):
         await message.answer(
             f"👋 С возвращением, <b>{user.full_name}</b>!\n\n"
             f"Вы можете отправить отчёт за сегодня или проверить свой статус.",
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=get_main_menu_keyboard(user.full_name)
         )
         logger.info(f"Existing user {user.full_name} ({message.from_user.id}) used /start")
     else:
@@ -111,9 +111,9 @@ async def process_name(message: Message, state: FSMContext, db: DatabaseService)
                 f"🎉 <b>Добро пожаловать в команду!</b>\n\n"
                 f"📊 Теперь вы можете отправлять ежедневные отчёты.\n"
                 f"⏰ Напоминания будут приходить каждый день в 18:00.\n\n"
-                f"💡 <b>Совет:</b> Используйте кнопку <b>\"📊 Отправить отчёт\"</b> "
+                f"💡 <b>Совет:</b> Используйте кнопку <b>\"📊 Отчёт\"</b> "
                 f"для быстрого доступа к форме.",
-                reply_markup=get_main_menu_keyboard()
+                reply_markup=get_main_menu_keyboard(user.full_name)
             )
 
             logger.info(f"User registered: {full_name} ({message.from_user.id})")
@@ -171,13 +171,6 @@ async def admin_panel_handler(message: Message, db: DatabaseService):
             "У вас нет прав доступа к административным функциям."
         )
 
-@router.message(F.text == "📊 Отправить отчёт")
-async def send_report_handler(message: Message, db: DatabaseService):
-    """Обработчик кнопки отправки отчёта"""
-    # Вызываем функцию отправки отчёта из report.py
-    from bot.handlers.report import send_report
-    await send_report(message, db)
-
 @router.message(F.text == "📈 Мой статус")
 async def status_handler(message: Message, db: DatabaseService):
     """Обработчик кнопки статуса"""
@@ -185,7 +178,26 @@ async def status_handler(message: Message, db: DatabaseService):
     from bot.handlers.report import user_status
     await user_status(message, db)
 
+@router.message(F.text == "Меню")
+async def menu_handler(message: Message, db: DatabaseService):
+    """Обработчик кнопки меню"""
+
+    user = await db.get_user(message.from_user.id)
+    if not user:
+        await message.answer("❌ Сначала необходимо зарегистрироваться. Используйте /start")
+        return
+
+    await message.answer(
+        f"👋 <b>{user.full_name}</b>\n\n"
+        "Главное меню:",
+        reply_markup=get_main_menu_keyboard(user.full_name)
+    )
+
 @router.message(F.text == "ℹ️ Помощь")
+async def help_button_handler(message: Message, db: DatabaseService):
+    """Обработчик кнопки помощи"""
+    await help_handler(message, db)
+
 async def help_handler(message: Message, db: DatabaseService):
     """Обработчик кнопки помощи"""
 
@@ -290,6 +302,36 @@ async def help_callbacks(callback: CallbackQuery):
     await callback.message.edit_text(text, reply_markup=get_help_keyboard())
     await callback.answer()
 
+@router.callback_query(F.data == "open_report_form")
+async def open_report_form(callback: CallbackQuery, db: DatabaseService):
+    """Открыть форму отчёта с правильным именем пользователя"""
+
+    user = await db.get_user(callback.from_user.id)
+    if not user:
+        await callback.answer("❌ Сначала необходимо зарегистрироваться. Используйте /start")
+        return
+
+    # Создаем URL с именем пользователя
+    from bot.config import Config
+    from urllib.parse import quote
+
+    webapp_url = f"{Config.WEBAPP_URL}?user_name={quote(user.full_name)}"
+
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+
+    webapp = WebAppInfo(url=webapp_url)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📊 Открыть форму отчёта", web_app=webapp)]
+    ])
+
+    await callback.message.edit_text(
+        "📊 <b>Отправка отчёта</b>\n\n"
+        f"👤 <b>Сотрудник:</b> {user.full_name}\n\n"
+        "Нажмите кнопку для открытия формы:",
+        reply_markup=keyboard
+    )
+    await callback.answer()
+
 @router.callback_query(F.data == "back")
 async def back_to_main(callback: CallbackQuery):
     """Возврат в главное меню"""
@@ -310,8 +352,8 @@ async def unknown_command(message: Message, db: DatabaseService):
         )
         return
 
-    # Для всех пользователей - игнорируем текст, показываем только кнопки
+    # Для зарегистрированных пользователей - показываем меню
     await message.answer(
         "Используйте кнопки меню:",
-        reply_markup=get_main_menu_keyboard()
+        reply_markup=get_main_menu_keyboard(user.full_name)
     )

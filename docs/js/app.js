@@ -80,19 +80,47 @@ class ReportApp {
         });
         this.currentDate.textContent = today;
 
-        // Установить имя пользователя из Telegram
+        // Установить имя пользователя
+        this.setUserName();
+
+        // Инициализировать валидацию
+        this.updateSummaryAndValidation();
+    }
+
+    setUserName() {
+        // Сначала попробуем получить имя из URL параметров (от бота)
+        const urlParams = new URLSearchParams(window.location.search);
+        const userNameFromUrl = urlParams.get('user_name');
+
+        if (userNameFromUrl) {
+            this.employeeName.value = decodeURIComponent(userNameFromUrl);
+            console.log('Using user name from bot:', this.employeeName.value);
+            return;
+        }
+
+        // Если нет параметра URL, используем данные Telegram
         const user = this.tg.initDataUnsafe?.user;
-        if (user) {
+
+        if (user && user.id) {
+            // Попробуем получить имя из localStorage (если оно было сохранено ранее)
+            const savedName = localStorage.getItem(`user_name_${user.id}`);
+            if (savedName) {
+                this.employeeName.value = savedName;
+                console.log('Using saved user name:', savedName);
+                return;
+            }
+
+            // Если сохраненного имени нет, используем данные из Telegram
             const fullName = `${user.first_name} ${user.last_name || ''}`.trim();
             this.employeeName.value = fullName;
-            console.log('User info:', user);
+            console.log('Using Telegram user info:', user);
+
+            // Сохраним для следующего раза
+            localStorage.setItem(`user_name_${user.id}`, fullName);
         } else {
             this.employeeName.value = 'Пользователь';
             console.warn('No user info available');
         }
-
-        // Инициализировать валидацию
-        this.updateSummaryAndValidation();
     }
 
     updateSummaryAndValidation() {

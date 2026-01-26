@@ -9,16 +9,26 @@ from aiogram.types import (
 )
 from bot.config import Config
 
-def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
+def get_main_menu_keyboard(user_full_name: str = None) -> ReplyKeyboardMarkup:
     """Главное меню для сотрудников"""
+
+    # Создаем кнопку для отчёта с прямым WebApp
+    report_button = KeyboardButton(text="📊 Отправить отчёт")
+    if user_full_name:
+        from urllib.parse import quote
+        webapp_url = f"{Config.WEBAPP_URL}?user_name={quote(user_full_name)}"
+        report_button = KeyboardButton(
+            text="📊 Отправить отчёт",
+            web_app=WebAppInfo(url=webapp_url)
+        )
+
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📊 Отправить отчёт")],
             [
                 KeyboardButton(text="📈 Мой статус"),
                 KeyboardButton(text="ℹ️ Помощь")
             ],
-            [KeyboardButton(text="⚙️ Открыть админ-панель")]
+            [report_button]
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
