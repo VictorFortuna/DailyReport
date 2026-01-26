@@ -78,7 +78,7 @@ async def request_report(message: Message, db: DatabaseService):
             f"✅ КЦ+: {existing_report.kp_plus}\n"
             f"🔄 КЦ: {existing_report.kp}\n"
             f"❌ Отказы: {existing_report.rejections}\n"
-            f"⚠️ Неадекв: {existing_report.inadequate}\n\n"
+            f"📵 Пустые звонки: {existing_report.inadequate}\n\n"
             f"🕐 <b>Время отправки:</b> {existing_report.submitted_at.strftime('%H:%M')}\n\n"
             f"💡 <b>Хотите обновить данные?</b>\n"
             f"Просто отправьте отчёт заново - данные обновятся.",
@@ -194,7 +194,7 @@ async def process_web_app_data(message: Message, db: DatabaseService):
                 f"✅ <b>КЦ+:</b> {kp_plus}\n"
                 f"🔄 <b>КЦ:</b> {kp}\n"
                 f"❌ <b>Отказы:</b> {rejections}\n"
-                f"⚠️ <b>Неадекв:</b> {inadequate}\n\n"
+                f"📵 <b>Пустые звонки:</b> {inadequate}\n\n"
                 f"📈 <b>Статистика:</b>\n"
                 f"🎯 <b>Результативных:</b> {total_resultative}\n"
                 f"📊 <b>Конверсия:</b> {conversion}%\n\n"
@@ -217,7 +217,7 @@ async def process_web_app_data(message: Message, db: DatabaseService):
                     f"📞 <b>Звонков:</b> {calls_count}\n"
                     f"🎯 <b>Результативных:</b> {total_resultative} ({conversion}%)\n"
                     f"✅ <b>КЦ+:</b> {kp_plus} | 🔄 <b>КЦ:</b> {kp}\n"
-                    f"❌ <b>Отказы:</b> {rejections} | ⚠️ <b>Неадекв:</b> {inadequate}"
+                    f"❌ <b>Отказы:</b> {rejections} | 📵 <b>Пустые звонки:</b> {inadequate}"
                 )
             except Exception as e:
                 logger.warning(f"Failed to notify admin about new report: {e}")
