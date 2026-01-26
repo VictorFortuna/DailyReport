@@ -72,10 +72,7 @@ async def main():
         from aiogram.types import BotCommand, BotCommandScopeDefault
 
         commands = [
-            BotCommand(command="start", description="🚀 Запустить бота / Регистрация"),
-            BotCommand(command="help", description="ℹ️ Помощь"),
-            BotCommand(command="status", description="📈 Мой статус"),
-            BotCommand(command="admin", description="👨‍💼 Админ-панель (только для админов)"),
+            BotCommand(command="admin", description="⚙️ Открыть админ-панель"),
         ]
 
         await bot.set_my_commands(commands, BotCommandScopeDefault())

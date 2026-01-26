@@ -17,7 +17,8 @@ def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
             [
                 KeyboardButton(text="📈 Мой статус"),
                 KeyboardButton(text="ℹ️ Помощь")
-            ]
+            ],
+            [KeyboardButton(text="⚙️ Открыть админ-панель")]
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
@@ -70,12 +71,7 @@ def get_admin_users_keyboard(users: list) -> InlineKeyboardMarkup:
 def get_user_status_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура для просмотра статуса пользователя"""
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📊 Отправить отчёт", callback_data="open_report_form")],
-        [
-            InlineKeyboardButton(text="📅 История отчётов", callback_data="user_history"),
-            InlineKeyboardButton(text="📈 Статистика", callback_data="user_stats")
-        ],
-        [InlineKeyboardButton(text="🔄 Обновить", callback_data="refresh_status")]
+        [InlineKeyboardButton(text="📊 Отправить отчёт", callback_data="open_report_form")]
     ])
     return keyboard
 

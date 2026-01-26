@@ -229,28 +229,29 @@ async def user_status(message: Message, db: DatabaseService):
     else:
         status_text += f"❌ <b>Отчёт за сегодня не отправлен</b>\n\n"
 
-    # Статистика за неделю
-    if recent_reports:
-        total_calls = sum(r.calls_count for r in recent_reports)
-        total_resultative = sum(r.kp_plus + r.kp for r in recent_reports)
-        avg_conversion = round((total_resultative / total_calls) * 100, 1) if total_calls > 0 else 0
+    # Статистика за неделю - только факт отправки
+    status_text += "📅 <b>Отчёты за последние 7 дней:</b>\n"
 
-        status_text += (
-            f"📊 <b>Статистика за {len(recent_reports)} дней:</b>\n"
-            f"📞 Всего звонков: {total_calls}\n"
-            f"🎯 Результативных: {total_resultative}\n"
-            f"📈 Средняя конверсия: {avg_conversion}%\n\n"
-        )
+    from datetime import timedelta
+    today_date = datetime.now().date()
 
-        # Последние отчёты
-        status_text += "📅 <b>Последние отчёты:</b>\n"
-        for report in recent_reports[:5]:  # Показываем максимум 5
-            report_date = datetime.strptime(report.report_date, '%Y-%m-%d').strftime('%d.%m')
-            resultative = report.kp_plus + report.kp
-            conversion = round((resultative / report.calls_count) * 100, 1) if report.calls_count > 0 else 0
-            status_text += f"• {report_date}: {report.calls_count} звонков, {conversion}% конверсия\n"
-    else:
-        status_text += "📅 <b>История отчётов пуста</b>\n"
+    # Создаем словарь отчётов по датам для быстрого поиска
+    reports_by_date = {r.report_date: r for r in recent_reports}
+
+    for i in range(7):
+        check_date = today_date - timedelta(days=i)
+        check_date_str = check_date.strftime('%Y-%m-%d')
+        display_date = check_date.strftime('%d.%m')
+
+        if i == 0:
+            display_date += " (сегодня)"
+        elif i == 1:
+            display_date += " (вчера)"
+
+        if check_date_str in reports_by_date:
+            status_text += f"✅ {display_date}\n"
+        else:
+            status_text += f"❌ {display_date}\n"
 
     await message.answer(status_text, reply_markup=get_user_status_keyboard())
 
