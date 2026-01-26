@@ -92,9 +92,11 @@ class ReportApp {
         const urlParams = new URLSearchParams(window.location.search);
         const userNameFromUrl = urlParams.get('user_name');
 
+        // Показываем отладочную информацию прямо в поле
+        this.employeeName.value = `DEBUG: URL=${window.location.href} | PARAM=${userNameFromUrl}`;
+
         if (userNameFromUrl) {
             this.employeeName.value = decodeURIComponent(userNameFromUrl);
-            console.log('Using user name from bot:', this.employeeName.value);
             return;
         }
 
@@ -301,4 +303,4 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     event.preventDefault();
-});
+});console.log("DEBUG: setUserName called");

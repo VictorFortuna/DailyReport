@@ -149,7 +149,7 @@ async def process_web_app_data(message: Message, db: DatabaseService):
                 f"📊 <b>Конверсия:</b> {conversion}%\n\n"
                 f"🕐 <b>Время отправки:</b> {report.submitted_at.strftime('%H:%M')}\n\n"
                 f"🙏 Спасибо за работу!",
-                reply_markup=get_main_menu_keyboard()
+                reply_markup=get_main_menu_keyboard(user.full_name)
             )
 
             logger.info(f"Report saved for {user.full_name}: {calls_count} calls, {total_resultative} resultative")
@@ -175,7 +175,7 @@ async def process_web_app_data(message: Message, db: DatabaseService):
                 "❌ <b>Ошибка сохранения отчёта</b>\n\n"
                 "Произошла ошибка при сохранении данных. "
                 "Попробуйте ещё раз или обратитесь к администратору.",
-                reply_markup=get_main_menu_keyboard()
+                reply_markup=get_main_menu_keyboard(user.full_name)
             )
             logger.error(f"Failed to save report for {user.full_name}")
 
