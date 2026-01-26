@@ -17,7 +17,7 @@
         <form id="reportForm" class="report-form">
             <div class="user-info">
                 <label>👤 Сотрудник:</label>
-                <input type="text" id="employeeName" class="input-field" value="ТЕСТ - если видите это, файл обновился" readonly>
+                <input type="text" id="employeeName" class="input-field" value="Сотрудник" readonly>
             </div>
 
             <div class="report-grid">
@@ -84,22 +84,14 @@
     </div>
 
     <script>
-        // Встроенная проверка JavaScript
-        alert('JavaScript загрузился! URL: ' + window.location.href);
-
-        // Проверяем параметры URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const userName = urlParams.get('user_name');
-        alert('Параметр user_name: ' + userName);
-
-        // Устанавливаем имя пользователя
+        // Устанавливаем имя пользователя из URL параметров
         document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userName = urlParams.get('user_name');
             const employeeField = document.getElementById('employeeName');
+
             if (userName) {
                 employeeField.value = decodeURIComponent(userName);
-                alert('Имя установлено: ' + employeeField.value);
-            } else {
-                alert('Параметр user_name не найден');
             }
         });
     </script>

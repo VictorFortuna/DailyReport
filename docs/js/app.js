@@ -88,18 +88,12 @@ class ReportApp {
     }
 
     setUserName() {
-        // Alert для проверки выполнения JavaScript
-        alert(`JavaScript работает! URL: ${window.location.href}`);
-
         // Сначала попробуем получить имя из URL параметров (от бота)
         const urlParams = new URLSearchParams(window.location.search);
         const userNameFromUrl = urlParams.get('user_name');
 
-        alert(`Параметр user_name: ${userNameFromUrl}`);
-
         if (userNameFromUrl) {
             this.employeeName.value = decodeURIComponent(userNameFromUrl);
-            alert(`Установлено имя: ${this.employeeName.value}`);
             return;
         }
 

@@ -13,19 +13,14 @@ def get_main_menu_keyboard(user_full_name: str = None) -> ReplyKeyboardMarkup:
     """Главное меню для сотрудников"""
 
     # Создаем кнопку для отчёта с прямым WebApp
-    print(f"DEBUG: get_main_menu_keyboard called with user_full_name='{user_full_name}'")
-
     report_button = KeyboardButton(text="📊 Отправить отчёт")
     if user_full_name:
         from urllib.parse import quote
         webapp_url = f"{Config.WEBAPP_URL}?user_name={quote(user_full_name)}"
-        print(f"DEBUG: Creating WebApp URL: {webapp_url}")
         report_button = KeyboardButton(
             text="📊 Отправить отчёт",
             web_app=WebAppInfo(url=webapp_url)
         )
-    else:
-        print("DEBUG: No user_full_name provided, creating button without WebApp")
 
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
