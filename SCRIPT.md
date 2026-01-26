@@ -28,10 +28,10 @@ function doPost(e) {
       "", // D: Новые клиенты (пустое, заполняется вручную)
       data.calls_count, // E: Общее Кол-во звонков клиентам
       data.inadequate, // F: Пустые звонки
-      data.rejections, // G: Звонки клиента
-      data.kp_plus, // H: Договор КЦ+
-      data.kp, // I: Договор КЦ
-      "" // J: Договор подбора (пустое, заполняется вручную)
+      "", // G: Звонки агентам (пустое, заполняется вручную)
+      data.rejections, // H: Отказы клиента
+      data.kp_plus, // I: Договор КЦ+
+      data.kp // J: Договор КЦ
     ]);
 
     return ContentService.createTextOutput(JSON.stringify({status: 'success'}))
