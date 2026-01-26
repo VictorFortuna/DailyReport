@@ -83,6 +83,26 @@
         </div>
     </div>
 
+    <script>
+        // Встроенная проверка JavaScript
+        alert('JavaScript загрузился! URL: ' + window.location.href);
+
+        // Проверяем параметры URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userName = urlParams.get('user_name');
+        alert('Параметр user_name: ' + userName);
+
+        // Устанавливаем имя пользователя
+        document.addEventListener('DOMContentLoaded', function() {
+            const employeeField = document.getElementById('employeeName');
+            if (userName) {
+                employeeField.value = decodeURIComponent(userName);
+                alert('Имя установлено: ' + employeeField.value);
+            } else {
+                alert('Параметр user_name не найден');
+            }
+        });
+    </script>
     <script src="js/app.js"></script>
 </body>
 </html>
