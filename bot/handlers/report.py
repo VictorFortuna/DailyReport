@@ -3,6 +3,7 @@
 """
 
 import json
+import aiohttp
 from datetime import datetime
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, WebAppInfo
@@ -19,6 +20,42 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 router = Router()
+
+async def send_to_google_sheets(report_data: dict) -> bool:
+    """Отправка данных отчёта в Google Таблицу"""
+    try:
+        # Подготовка данных для Google Sheets
+        payload = {
+            "secret_key": Config.GOOGLE_SHEETS_SECRET_KEY,
+            "employee_name": report_data.get("employee_name"),
+            "report_date": report_data.get("report_date"),
+            "calls_count": report_data.get("calls_count"),
+            "kp_plus": report_data.get("kp_plus"),
+            "kp": report_data.get("kp"),
+            "rejections": report_data.get("rejections"),
+            "inadequate": report_data.get("inadequate")
+        }
+
+        # Отправка POST запроса в Google Apps Script
+        timeout = aiohttp.ClientTimeout(total=30)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(
+                Config.GOOGLE_SHEETS_WEBHOOK_URL,
+                json=payload,
+                headers={'Content-Type': 'application/json'}
+            ) as response:
+                result = await response.json()
+
+                if result.get("status") == "success":
+                    logger.info(f"Successfully sent data to Google Sheets for {report_data.get('employee_name')}")
+                    return True
+                else:
+                    logger.error(f"Google Sheets error: {result.get('message', 'Unknown error')}")
+                    return False
+
+    except Exception as e:
+        logger.error(f"Failed to send data to Google Sheets: {e}")
+        return False
 
 @router.message(F.text == "📊 Отправить отчёт")
 async def request_report(message: Message, db: DatabaseService):
@@ -38,8 +75,8 @@ async def request_report(message: Message, db: DatabaseService):
             f"✅ <b>Отчёт за сегодня уже отправлен!</b>\n\n"
             f"📊 <b>Ваши данные:</b>\n"
             f"📞 Звонков: {existing_report.calls_count}\n"
-            f"✅ КП+: {existing_report.kp_plus}\n"
-            f"🔄 КП: {existing_report.kp}\n"
+            f"✅ КЦ+: {existing_report.kp_plus}\n"
+            f"🔄 КЦ: {existing_report.kp}\n"
             f"❌ Отказы: {existing_report.rejections}\n"
             f"⚠️ Неадекв: {existing_report.inadequate}\n\n"
             f"🕐 <b>Время отправки:</b> {existing_report.submitted_at.strftime('%H:%M')}\n\n"
@@ -135,19 +172,34 @@ async def process_web_app_data(message: Message, db: DatabaseService):
             total_resultative = kp_plus + kp
             conversion = round((total_resultative / calls_count) * 100, 1) if calls_count > 0 else 0
 
+            # Отправка данных в Google Таблицу
+            google_sheets_data = {
+                "employee_name": user.full_name,
+                "report_date": today,
+                "calls_count": calls_count,
+                "kp_plus": kp_plus,
+                "kp": kp,
+                "rejections": rejections,
+                "inadequate": inadequate
+            }
+
+            sheets_success = await send_to_google_sheets(google_sheets_data)
+            sheets_status = "✅ Данные сохранены в Google Таблицу" if sheets_success else "⚠️ Ошибка сохранения в Google Таблицу (данные в базе сохранены)"
+
             # Отправка подтверждения
             await message.answer(
                 f"✅ <b>Отчёт успешно отправлен!</b>\n\n"
                 f"📊 <b>Ваши результаты за {datetime.now().strftime('%d.%m.%Y')}:</b>\n\n"
                 f"📞 <b>Звонков:</b> {calls_count}\n"
-                f"✅ <b>КП+:</b> {kp_plus}\n"
-                f"🔄 <b>КП:</b> {kp}\n"
+                f"✅ <b>КЦ+:</b> {kp_plus}\n"
+                f"🔄 <b>КЦ:</b> {kp}\n"
                 f"❌ <b>Отказы:</b> {rejections}\n"
                 f"⚠️ <b>Неадекв:</b> {inadequate}\n\n"
                 f"📈 <b>Статистика:</b>\n"
                 f"🎯 <b>Результативных:</b> {total_resultative}\n"
                 f"📊 <b>Конверсия:</b> {conversion}%\n\n"
                 f"🕐 <b>Время отправки:</b> {report.submitted_at.strftime('%H:%M')}\n\n"
+                f"{sheets_status}\n\n"
                 f"🙏 Спасибо за работу!",
                 reply_markup=get_main_menu_keyboard(user.full_name)
             )
@@ -164,7 +216,7 @@ async def process_web_app_data(message: Message, db: DatabaseService):
                     f"🕐 <b>Время:</b> {report.submitted_at.strftime('%H:%M')}\n\n"
                     f"📞 <b>Звонков:</b> {calls_count}\n"
                     f"🎯 <b>Результативных:</b> {total_resultative} ({conversion}%)\n"
-                    f"✅ <b>КП+:</b> {kp_plus} | 🔄 <b>КП:</b> {kp}\n"
+                    f"✅ <b>КЦ+:</b> {kp_plus} | 🔄 <b>КЦ:</b> {kp}\n"
                     f"❌ <b>Отказы:</b> {rejections} | ⚠️ <b>Неадекв:</b> {inadequate}"
                 )
             except Exception as e:

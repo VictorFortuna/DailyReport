@@ -29,8 +29,12 @@ class Config:
     # Development
     DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-    # Mini App URL (будет на Render.com после деплоя)
-    WEBAPP_URL = os.getenv('WEBAPP_URL', 'https://your-app.onrender.com/webapp')
+    # Mini App URL (GitHub Pages)
+    WEBAPP_URL = os.getenv('WEBAPP_URL', 'https://victorfortuna.github.io/DailyReport')
+
+    # Google Sheets Webhook
+    GOOGLE_SHEETS_WEBHOOK_URL = os.getenv('GOOGLE_SHEETS_WEBHOOK_URL', 'https://script.google.com/macros/s/AKfycbw4FpZsRd7rgjNY1gCRV7s-b-JZrTLir4tDSpP_eNUqYLa2weMskaHUyNXWcVo3aNK70w/exec')
+    GOOGLE_SHEETS_SECRET_KEY = os.getenv('GOOGLE_SHEETS_SECRET_KEY', 'daily_report_bot_2025_secure_key')
 
     @classmethod
     def validate(cls):
