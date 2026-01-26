@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ежедневный отчёт</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📊 Ежедневный отчёт</h1>
+            <p class="date" id="currentDate"></p>
+        </header>
+
+        <form id="reportForm" class="report-form">
+            <div class="user-info">
+                <label>👤 Сотрудник:</label>
+                <input type="text" id="employeeName" class="input-field" readonly>
+            </div>
+
+            <div class="report-grid">
+                <div class="field-group">
+                    <label for="callsCount">📞 Кол-во звонков:</label>
+                    <input type="number" id="callsCount" name="callsCount"
+                           class="input-field" min="0" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="kpPlus">✅ КП+ (закрытые сделки):</label>
+                    <input type="number" id="kpPlus" name="kpPlus"
+                           class="input-field" min="0" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="kp">🔄 КП (в работе):</label>
+                    <input type="number" id="kp" name="kp"
+                           class="input-field" min="0" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="rejections">❌ Отказы:</label>
+                    <input type="number" id="rejections" name="rejections"
+                           class="input-field" min="0" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="inadequate">⚠️ Неадекв:</label>
+                    <input type="number" id="inadequate" name="inadequate"
+                           class="input-field" min="0" required>
+                </div>
+            </div>
+
+            <div class="summary" id="summary">
+                <h3>📈 Итого:</h3>
+                <p>Всего звонков: <span id="totalCalls">0</span></p>
+                <p>Результативных: <span id="resultativeCalls">0</span></p>
+                <p>Конверсия: <span id="conversion">0%</span></p>
+            </div>
+
+            <button type="submit" id="submitButton" class="submit-button" disabled>
+                📤 Отправить отчёт
+            </button>
+        </form>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Отправляем отчёт...</p>
+        </div>
+
+        <div id="success" class="success hidden">
+            <div class="success-icon">✅</div>
+            <h2>Отчёт отправлен!</h2>
+            <p>Спасибо за работу!</p>
+        </div>
+
+        <div id="error" class="error hidden">
+            <div class="error-icon">❌</div>
+            <h2>Ошибка</h2>
+            <p id="errorMessage">Что-то пошло не так. Попробуйте ещё раз.</p>
+            <button id="retryButton" class="retry-button">Попробовать снова</button>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
