@@ -80,9 +80,7 @@ def get_admin_users_keyboard(users: list) -> InlineKeyboardMarkup:
 
 def get_user_status_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура для просмотра статуса пользователя"""
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📊 Отправить отчёт", callback_data="open_report_form")]
-    ])
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
     return keyboard
 
 def get_confirmation_keyboard(action: str) -> InlineKeyboardMarkup:
