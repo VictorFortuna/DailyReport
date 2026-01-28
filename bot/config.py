@@ -33,7 +33,7 @@ class Config:
     WEBAPP_URL = os.getenv('WEBAPP_URL', 'https://victorfortuna.github.io/DailyReport')
 
     # Google Sheets Webhook
-    GOOGLE_SHEETS_WEBHOOK_URL = os.getenv('GOOGLE_SHEETS_WEBHOOK_URL', 'https://script.google.com/macros/s/AKfycbw4FpZsRd7rgjNY1gCRV7s-b-JZrTLir4tDSpP_eNUqYLa2weMskaHUyNXWcVo3aNK70w/exec')
+    GOOGLE_SHEETS_WEBHOOK_URL = os.getenv('GOOGLE_SHEETS_WEBHOOK_URL', 'https://script.google.com/macros/s/AKfycbyopLLgXsfJQzBN81HWeuTr-2PWXZVV52Vdkvw3LJbHpgwq7k9ioLfMWtsnvpWoRcqD2w/exec')
     GOOGLE_SHEETS_SECRET_KEY = os.getenv('GOOGLE_SHEETS_SECRET_KEY', 'daily_report_bot_2025_secure_key')
 
     @classmethod

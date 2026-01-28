@@ -237,13 +237,23 @@ class ReportApp {
         try {
             console.log('Sending report data:', reportData);
 
-            // Отправить данные через Telegram Web App
-            this.tg.sendData(JSON.stringify(reportData));
+            // Отправить прямым HTTP-запросом в бот
+            const response = await fetch('/api/submit_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...reportData,
+                    telegram_user_id: this.tg.initDataUnsafe?.user?.id
+                })
+            });
 
-            // Показать успех (это сработает, если sendData не закроет приложение)
-            setTimeout(() => {
+            if (response.ok) {
                 this.showSuccess();
-            }, 1000);
+            } else {
+                throw new Error('Server error: ' + response.status);
+            }
 
         } catch (error) {
             console.error('Error submitting report:', error);

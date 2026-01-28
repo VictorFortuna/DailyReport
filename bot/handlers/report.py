@@ -42,8 +42,22 @@ async def send_to_google_sheets(report_data: dict) -> bool:
             async with session.post(
                 Config.GOOGLE_SHEETS_WEBHOOK_URL,
                 json=payload,
-                headers={'Content-Type': 'application/json'}
+                headers={'Content-Type': 'application/json'},
+                allow_redirects=True
             ) as response:
+                logger.info(f"Google Sheets response status: {response.status}")
+
+                if response.status != 200:
+                    text = await response.text()
+                    logger.error(f"Google Sheets HTTP error {response.status}: {text[:200]}...")
+                    return False
+
+                content_type = response.headers.get('content-type', '')
+                if 'application/json' not in content_type:
+                    text = await response.text()
+                    logger.error(f"Google Sheets returned HTML instead of JSON: {text[:200]}...")
+                    return False
+
                 result = await response.json()
 
                 if result.get("status") == "success":

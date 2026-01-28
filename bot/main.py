@@ -52,9 +52,9 @@ async def main():
     # Добавление сервисов в диспетчер
     dp["db"] = db_service
 
-    # Регистрация роутеров
+    # Регистрация роутеров (порядок важен!)
+    dp.include_router(report.router)  # WebApp данные должны обрабатываться первыми
     dp.include_router(start.router)
-    dp.include_router(report.router)
     dp.include_router(admin.router)
 
     # Инициализация и запуск планировщика
@@ -82,11 +82,7 @@ async def main():
         try:
             await bot.send_message(
                 Config.ADMIN_TELEGRAM_ID,
-                "🚀 <b>Daily Report Bot запущен!</b>\n\n"
-                f"🤖 Бот: @{bot_info.username}\n"
-                f"🆔 ID: <code>{bot_info.id}</code>\n"
-                f"⏰ Напоминания: {Config.REMINDER_TIME}\n"
-                f"🕐 Часовой пояс: {Config.TIMEZONE}"
+                "🚀 Daily Report Bot запущен!"
             )
         except Exception as e:
             logger.warning(f"Failed to notify admin: {e}")
