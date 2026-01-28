@@ -162,8 +162,8 @@ async def admin_panel_handler(message: Message, db: DatabaseService):
     from bot.config import Config
     if message.from_user.id == Config.ADMIN_TELEGRAM_ID:
         # Для админа показываем админ-панель
-        from bot.handlers.admin import show_admin_panel
-        await show_admin_panel(message, db)
+        from bot.handlers.admin import admin_panel
+        await admin_panel(message, db)
     else:
         # Для обычных пользователей - отказ в доступе
         await message.answer(

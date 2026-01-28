@@ -17,6 +17,7 @@ from bot.keyboards import (
 from services.database import DatabaseService
 from bot.config import Config
 from utils.logger import get_logger
+from utils.timezone import format_moscow_time
 
 logger = get_logger(__name__)
 router = Router()
@@ -93,7 +94,7 @@ async def request_report(message: Message, db: DatabaseService):
             f"🔄 КЦ: {existing_report.kp}\n"
             f"❌ Отказы: {existing_report.rejections}\n"
             f"📵 Пустые звонки: {existing_report.inadequate}\n\n"
-            f"🕐 <b>Время отправки:</b> {existing_report.submitted_at.strftime('%H:%M')}\n\n"
+            f"🕐 <b>Время отправки:</b> {format_moscow_time(existing_report.submitted_at)}\n\n"
             f"💡 <b>Хотите обновить данные?</b>\n"
             f"Просто отправьте отчёт заново - данные обновятся.",
             reply_markup=get_report_keyboard()
@@ -212,7 +213,7 @@ async def process_web_app_data(message: Message, db: DatabaseService):
                 f"📈 <b>Статистика:</b>\n"
                 f"🎯 <b>Результативных:</b> {total_resultative}\n"
                 f"📊 <b>Конверсия:</b> {conversion}%\n\n"
-                f"🕐 <b>Время отправки:</b> {report.submitted_at.strftime('%H:%M')}\n\n"
+                f"🕐 <b>Время отправки:</b> {format_moscow_time(report.submitted_at)}\n\n"
                 f"{sheets_status}\n\n"
                 f"🙏 Спасибо за работу!",
                 reply_markup=get_main_menu_keyboard(user.full_name)
@@ -227,7 +228,7 @@ async def process_web_app_data(message: Message, db: DatabaseService):
                     f"📊 <b>Новый отчёт получен</b>\n\n"
                     f"👤 <b>Сотрудник:</b> {user.full_name}\n"
                     f"📅 <b>Дата:</b> {datetime.now().strftime('%d.%m.%Y')}\n"
-                    f"🕐 <b>Время:</b> {report.submitted_at.strftime('%H:%M')}\n\n"
+                    f"🕐 <b>Время:</b> {format_moscow_time(report.submitted_at)}\n\n"
                     f"📞 <b>Звонков:</b> {calls_count}\n"
                     f"🎯 <b>Результативных:</b> {total_resultative} ({conversion}%)\n"
                     f"✅ <b>КЦ+:</b> {kp_plus} | 🔄 <b>КЦ:</b> {kp}\n"

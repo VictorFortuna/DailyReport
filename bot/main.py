@@ -54,8 +54,8 @@ async def main():
 
     # Регистрация роутеров (порядок важен!)
     dp.include_router(report.router)  # WebApp данные должны обрабатываться первыми
+    dp.include_router(admin.router)   # Админ команды должны быть выше универсального обработчика
     dp.include_router(start.router)
-    dp.include_router(admin.router)
 
     # Инициализация и запуск планировщика
     scheduler = SchedulerService(bot, db_service)

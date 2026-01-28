@@ -17,6 +17,7 @@ from bot.keyboards import (
 from services.database import DatabaseService
 from bot.config import Config
 from utils.logger import get_logger
+from utils.timezone import format_moscow_time
 
 logger = get_logger(__name__)
 router = Router()
@@ -80,7 +81,7 @@ async def admin_today_status(callback: CallbackQuery, db: DatabaseService):
     if daily_reports:
         status_text += f"✅ <b>Отправили отчёт ({len(daily_reports)}):</b>\n"
         for report in daily_reports:
-            time_str = datetime.fromisoformat(report['submitted_at']).strftime('%H:%M')
+            time_str = format_moscow_time(datetime.fromisoformat(report['submitted_at']))
             calls = report['calls_count']
             resultative = report['kp_plus'] + report['kp']
             conversion = round((resultative / calls) * 100, 1) if calls > 0 else 0
