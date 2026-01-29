@@ -1,7 +1,7 @@
 import aiosqlite
 from datetime import date, datetime
 from typing import Optional, List, Dict
-from database.models import User, Report, DatabaseModel
+from database.models import User, Report, PendingRegistration, BlockedUser, DatabaseModel
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -245,3 +245,193 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Failed to get users without report for {report_date}: {e}")
             return []
+
+    # Registration management operations
+    async def create_pending_registration(self, telegram_id: int, full_name: str, username: str = None) -> Optional[PendingRegistration]:
+        """Create new pending registration"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    """INSERT INTO pending_registrations (telegram_id, full_name, username)
+                       VALUES (?, ?, ?)""",
+                    (telegram_id, full_name, username)
+                )
+                await db.commit()
+
+                # Get created registration
+                registration_row = await db.execute(
+                    "SELECT * FROM pending_registrations WHERE id = ?", (cursor.lastrowid,)
+                )
+                row = await registration_row.fetchone()
+
+                if row:
+                    registration = PendingRegistration.from_row(row)
+                    logger.info(f"Created pending registration: {registration.full_name} ({registration.telegram_id})")
+                    return registration
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to create pending registration {telegram_id}: {e}")
+            return None
+
+    async def get_pending_registrations(self, status: str = 'pending') -> List[PendingRegistration]:
+        """Get pending registrations by status"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT * FROM pending_registrations WHERE status = ? ORDER BY requested_at",
+                    (status,)
+                )
+                rows = await cursor.fetchall()
+
+                return [PendingRegistration.from_row(row) for row in rows]
+
+        except Exception as e:
+            logger.error(f"Failed to get pending registrations: {e}")
+            return []
+
+    async def get_pending_registration(self, telegram_id: int) -> Optional[PendingRegistration]:
+        """Get pending registration by telegram_id"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT * FROM pending_registrations WHERE telegram_id = ?", (telegram_id,)
+                )
+                row = await cursor.fetchone()
+
+                if row:
+                    return PendingRegistration.from_row(row)
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to get pending registration {telegram_id}: {e}")
+            return None
+
+    async def approve_registration(self, registration_id: int) -> bool:
+        """Approve pending registration and create user"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+
+                # Get registration details
+                cursor = await db.execute(
+                    "SELECT * FROM pending_registrations WHERE id = ? AND status = 'pending'",
+                    (registration_id,)
+                )
+                row = await cursor.fetchone()
+
+                if not row:
+                    return False
+
+                registration = PendingRegistration.from_row(row)
+
+                # Create user
+                await db.execute(
+                    """INSERT INTO users (telegram_id, full_name, username)
+                       VALUES (?, ?, ?)""",
+                    (registration.telegram_id, registration.full_name, registration.username)
+                )
+
+                # Update registration status
+                await db.execute(
+                    "UPDATE pending_registrations SET status = 'approved' WHERE id = ?",
+                    (registration_id,)
+                )
+
+                await db.commit()
+                logger.info(f"Approved registration: {registration.full_name} ({registration.telegram_id})")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to approve registration {registration_id}: {e}")
+            return False
+
+    async def reject_registration(self, registration_id: int) -> bool:
+        """Reject pending registration"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute(
+                    "UPDATE pending_registrations SET status = 'rejected' WHERE id = ?",
+                    (registration_id,)
+                )
+                await db.commit()
+                logger.info(f"Rejected registration ID: {registration_id}")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to reject registration {registration_id}: {e}")
+            return False
+
+    async def is_user_blocked(self, telegram_id: int) -> bool:
+        """Check if user is blocked"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                cursor = await db.execute(
+                    "SELECT 1 FROM blocked_users WHERE telegram_id = ?", (telegram_id,)
+                )
+                row = await cursor.fetchone()
+                return row is not None
+
+        except Exception as e:
+            logger.error(f"Failed to check if user {telegram_id} is blocked: {e}")
+            return False
+
+    async def block_user(self, telegram_id: int, reason: str, blocked_by: int, full_name: str = None, username: str = None) -> bool:
+        """Block user"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute(
+                    """INSERT OR REPLACE INTO blocked_users (telegram_id, full_name, username, reason, blocked_by)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (telegram_id, full_name, username, reason, blocked_by)
+                )
+                await db.commit()
+                logger.info(f"Blocked user: {telegram_id} by {blocked_by}, reason: {reason}")
+                return True
+
+        except Exception as e:
+            logger.error(f"Failed to block user {telegram_id}: {e}")
+            return False
+
+    async def get_blocked_users(self) -> List[BlockedUser]:
+        """Get all blocked users"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT * FROM blocked_users ORDER BY blocked_at DESC"
+                )
+                rows = await cursor.fetchall()
+
+                return [BlockedUser.from_row(row) for row in rows]
+
+        except Exception as e:
+            logger.error(f"Failed to get blocked users: {e}")
+            return []
+
+    async def delete_user(self, user_id: int) -> bool:
+        """Delete user and all associated data (reports, etc.)"""
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                # Сначала удаляем связанные отчёты
+                await db.execute("DELETE FROM reports WHERE user_id = ?", (user_id,))
+
+                # Затем удаляем самого пользователя
+                cursor = await db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+
+                await db.commit()
+
+                # Проверяем, был ли пользователь удален
+                if cursor.rowcount > 0:
+                    logger.info(f"Deleted user ID: {user_id} and all associated data")
+                    return True
+                else:
+                    logger.warning(f"User ID {user_id} not found for deletion")
+                    return False
+
+        except Exception as e:
+            logger.error(f"Failed to delete user {user_id}: {e}")
+            return False

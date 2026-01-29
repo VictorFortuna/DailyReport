@@ -37,7 +37,43 @@ async def cmd_start(message: Message, state: FSMContext, db: DatabaseService):
         )
         logger.info(f"Existing user {user.full_name} ({message.from_user.id}) used /start")
     else:
-        # Новый пользователь - начинаем регистрацию
+        # Проверяем, не заблокирован ли пользователь
+        is_blocked = await db.is_user_blocked(message.from_user.id)
+        if is_blocked:
+            await message.answer(
+                "❌ <b>Доступ к боту заблокирован</b>\n\n"
+                "Ваш аккаунт был заблокирован администратором. "
+                "Для решения данного вопроса обратитесь к руководству."
+            )
+            logger.warning(f"Blocked user {message.from_user.id} attempted to register")
+            return
+
+        # Проверяем, есть ли уже заявка на регистрацию
+        existing_registration = await db.get_pending_registration(message.from_user.id)
+        if existing_registration:
+            status_emoji = {
+                'pending': '⏳',
+                'approved': '✅',
+                'rejected': '❌'
+            }
+            status_text = {
+                'pending': 'рассматривается',
+                'approved': 'одобрена',
+                'rejected': 'отклонена'
+            }
+
+            await message.answer(
+                f"📋 <b>Ваша заявка на регистрацию</b>\n\n"
+                f"{status_emoji.get(existing_registration.status, '❓')} "
+                f"<b>Статус:</b> {status_text.get(existing_registration.status, 'неизвестен')}\n"
+                f"📝 <b>ФИО:</b> {existing_registration.full_name}\n"
+                f"📅 <b>Подана:</b> {existing_registration.requested_at.strftime('%d.%m.%Y %H:%M') if existing_registration.requested_at else 'Неизвестно'}\n\n"
+                + ("✏️ Ожидайте решения администратора." if existing_registration.status == 'pending'
+                   else f"❌ Заявка {status_text[existing_registration.status]}. Обратитесь к руководству для решения вопроса.")
+            )
+            return
+
+        # Новый пользователь - начинаем подачу заявки на регистрацию
         await message.answer(
             "👋 <b>Добро пожаловать в Daily Report Bot!</b>\n\n"
             "🤖 Я помогу вам быстро отправлять ежедневные отчёты о работе.\n\n"
@@ -46,8 +82,8 @@ async def cmd_start(message: Message, state: FSMContext, db: DatabaseService):
             "• 📈 Показывать статистику ваших отчётов\n"
             "• ⏰ Напоминать о необходимости отправить отчёт\n"
             "• 📱 Работать прямо в Telegram без установки приложений\n\n"
-            "📝 <b>Для начала работы нужна регистрация.</b>\n"
-            "Давайте зарегистрируем вас в системе!",
+            "📝 <b>Для работы требуется одобрение администратора.</b>\n"
+            "Давайте подадим заявку на регистрацию!",
             reply_markup=get_registration_keyboard()
         )
         logger.info(f"New user {message.from_user.id} started registration")
@@ -94,51 +130,69 @@ async def process_name(message: Message, state: FSMContext, db: DatabaseService)
         )
         return
 
-    # Создание пользователя
+    # Создание заявки на регистрацию
     try:
-        user = await db.create_user(
+        registration = await db.create_pending_registration(
             telegram_id=message.from_user.id,
             full_name=full_name,
             username=message.from_user.username
         )
 
-        if user:
+        if registration:
             await state.clear()
             await message.answer(
-                f"✅ <b>Регистрация завершена!</b>\n\n"
-                f"👤 <b>Ваше имя:</b> {user.full_name}\n"
-                f"🆔 <b>Ваш ID:</b> <code>{user.telegram_id}</code>\n\n"
-                f"🎉 <b>Добро пожаловать в команду!</b>\n\n"
-                f"📊 Теперь вы можете отправлять ежедневные отчёты.\n"
-                f"⏰ Напоминания будут приходить каждый день в 18:00.\n\n"
-                f"💡 <b>Совет:</b> Используйте кнопку <b>\"📊 Отчёт\"</b> "
-                f"для быстрого доступа к форме.",
-                reply_markup=get_main_menu_keyboard(user.full_name)
+                f"📋 <b>Заявка подана!</b>\n\n"
+                f"👤 <b>Ваше имя:</b> {registration.full_name}\n"
+                f"🆔 <b>Ваш ID:</b> <code>{registration.telegram_id}</code>\n\n"
+                f"⏳ <b>Заявка отправлена администратору</b>\n\n"
+                f"📧 После одобрения заявки вы получите уведомление "
+                f"и сможете начать работу с ботом.\n\n"
+                f"💡 <b>Что дальше?</b>\n"
+                f"• Ожидайте решения администратора\n"
+                f"• Проверить статус можно командой /start\n"
+                f"• При возникновении вопросов обращайтесь к руководству",
+                reply_markup=None
             )
 
-            logger.info(f"User registered: {full_name} ({message.from_user.id})")
+            logger.info(f"Registration request created: {full_name} ({message.from_user.id})")
 
-            # Уведомление админа о новом пользователе
+            # Уведомление админа о новой заявке
             from bot.config import Config
             try:
                 bot = message.bot
+                from bot.keyboards import get_confirmation_keyboard
+                from utils.timezone import format_moscow_time
+
+                registration_time = format_moscow_time(registration.requested_at, '%d.%m.%Y %H:%M')
+
+                # Создаем кнопки для одобрения/отклонения
+                from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+                approval_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                    [
+                        InlineKeyboardButton(text="✅ Одобрить", callback_data=f"approve_reg_{registration.id}"),
+                        InlineKeyboardButton(text="❌ Отклонить", callback_data=f"reject_reg_{registration.id}")
+                    ]
+                ])
+
                 await bot.send_message(
                     Config.ADMIN_TELEGRAM_ID,
-                    f"👤 <b>Новый сотрудник зарегистрирован!</b>\n\n"
+                    f"📋 <b>Новая заявка на регистрацию!</b>\n\n"
                     f"📝 <b>Имя:</b> {full_name}\n"
                     f"🆔 <b>Telegram ID:</b> <code>{message.from_user.id}</code>\n"
                     f"📱 <b>Username:</b> @{message.from_user.username or 'отсутствует'}\n"
-                    f"📅 <b>Дата:</b> {user.created_at.strftime('%d.%m.%Y %H:%M')}"
+                    f"📅 <b>Подана:</b> {registration_time}\n\n"
+                    f"Выберите действие:",
+                    reply_markup=approval_keyboard
                 )
             except Exception as e:
-                logger.warning(f"Failed to notify admin about new user: {e}")
+                logger.warning(f"Failed to notify admin about registration request: {e}")
         else:
             await message.answer(
-                "❌ <b>Ошибка регистрации</b>\n\n"
-                "Произошла ошибка при создании аккаунта. "
+                "❌ <b>Ошибка подачи заявки</b>\n\n"
+                "Произошла ошибка при создании заявки. "
                 "Попробуйте ещё раз или обратитесь к администратору."
             )
-            logger.error(f"Failed to create user: {full_name} ({message.from_user.id})")
+            logger.error(f"Failed to create registration request: {full_name} ({message.from_user.id})")
 
     except Exception as e:
         await message.answer(

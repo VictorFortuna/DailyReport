@@ -50,6 +50,32 @@ class DatabaseModel:
                 )
             ''')
 
+            # Pending registrations table
+            await db.execute('''
+                CREATE TABLE IF NOT EXISTS pending_registrations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    telegram_id INTEGER UNIQUE NOT NULL,
+                    full_name TEXT NOT NULL,
+                    username TEXT,
+                    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected'))
+                )
+            ''')
+
+            # Blocked users table
+            await db.execute('''
+                CREATE TABLE IF NOT EXISTS blocked_users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    telegram_id INTEGER UNIQUE NOT NULL,
+                    full_name TEXT,
+                    username TEXT,
+                    reason TEXT,
+                    blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    blocked_by INTEGER NOT NULL,
+                    FOREIGN KEY (blocked_by) REFERENCES users(id)
+                )
+            ''')
+
             await db.commit()
 
 class User:
@@ -137,4 +163,78 @@ class Report:
             rejections=row['rejections'],
             inadequate=row['inadequate'],
             submitted_at=datetime.fromisoformat(row['submitted_at']) if row['submitted_at'] else None,
+        )
+
+class PendingRegistration:
+    """Pending registration model"""
+
+    def __init__(self, id: int = None, telegram_id: int = None, full_name: str = None,
+                 username: str = None, requested_at: datetime = None, status: str = 'pending'):
+        self.id = id
+        self.telegram_id = telegram_id
+        self.full_name = full_name
+        self.username = username
+        self.requested_at = requested_at
+        self.status = status
+
+    def to_dict(self) -> Dict:
+        """Convert pending registration to dictionary"""
+        return {
+            'id': self.id,
+            'telegram_id': self.telegram_id,
+            'full_name': self.full_name,
+            'username': self.username,
+            'requested_at': self.requested_at.isoformat() if self.requested_at else None,
+            'status': self.status,
+        }
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row) -> 'PendingRegistration':
+        """Create PendingRegistration instance from database row"""
+        return cls(
+            id=row['id'],
+            telegram_id=row['telegram_id'],
+            full_name=row['full_name'],
+            username=row['username'],
+            requested_at=datetime.fromisoformat(row['requested_at']) if row['requested_at'] else None,
+            status=row['status'],
+        )
+
+class BlockedUser:
+    """Blocked user model"""
+
+    def __init__(self, id: int = None, telegram_id: int = None, full_name: str = None,
+                 username: str = None, reason: str = None, blocked_at: datetime = None,
+                 blocked_by: int = None):
+        self.id = id
+        self.telegram_id = telegram_id
+        self.full_name = full_name
+        self.username = username
+        self.reason = reason
+        self.blocked_at = blocked_at
+        self.blocked_by = blocked_by
+
+    def to_dict(self) -> Dict:
+        """Convert blocked user to dictionary"""
+        return {
+            'id': self.id,
+            'telegram_id': self.telegram_id,
+            'full_name': self.full_name,
+            'username': self.username,
+            'reason': self.reason,
+            'blocked_at': self.blocked_at.isoformat() if self.blocked_at else None,
+            'blocked_by': self.blocked_by,
+        }
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row) -> 'BlockedUser':
+        """Create BlockedUser instance from database row"""
+        return cls(
+            id=row['id'],
+            telegram_id=row['telegram_id'],
+            full_name=row['full_name'],
+            username=row['username'],
+            reason=row['reason'],
+            blocked_at=datetime.fromisoformat(row['blocked_at']) if row['blocked_at'] else None,
+            blocked_by=row['blocked_by'],
         )

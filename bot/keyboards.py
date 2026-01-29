@@ -51,6 +51,7 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📊 Статус отчётов сегодня", callback_data="admin_today_status")],
         [InlineKeyboardButton(text="👥 Список сотрудников", callback_data="admin_users_list")],
+        [InlineKeyboardButton(text="📋 Заявки на регистрацию", callback_data="admin_registrations")],
         [
             InlineKeyboardButton(text="⚙️ Настройки", callback_data="admin_settings"),
             InlineKeyboardButton(text="📈 Статистика", callback_data="admin_stats")
@@ -134,3 +135,47 @@ def get_admin_user_actions_keyboard(user_id: int) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🔙 Назад к списку", callback_data="admin_users_list")]
     ])
     return keyboard
+
+def get_admin_registrations_keyboard(registrations: list) -> InlineKeyboardMarkup:
+    """Клавиатура со списком заявок для админа"""
+    keyboard = []
+
+    for registration in registrations:
+        status_emoji = {
+            'pending': '⏳',
+            'approved': '✅',
+            'rejected': '❌'
+        }
+        emoji = status_emoji.get(registration.status, '❓')
+
+        keyboard.append([
+            InlineKeyboardButton(
+                text=f"{emoji} {registration.full_name}",
+                callback_data=f"admin_reg_{registration.id}"
+            )
+        ])
+
+    keyboard.append([
+        InlineKeyboardButton(text="🔙 Назад", callback_data="admin_back")
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def get_registration_actions_keyboard(registration_id: int, status: str = 'pending') -> InlineKeyboardMarkup:
+    """Действия с заявкой на регистрацию"""
+    keyboard = []
+
+    if status == 'pending':
+        keyboard.append([
+            InlineKeyboardButton(text="✅ Одобрить", callback_data=f"approve_reg_{registration_id}"),
+            InlineKeyboardButton(text="❌ Отклонить", callback_data=f"reject_reg_{registration_id}")
+        ])
+        keyboard.append([
+            InlineKeyboardButton(text="🚫 Заблокировать", callback_data=f"block_reg_{registration_id}")
+        ])
+
+    keyboard.append([
+        InlineKeyboardButton(text="🔙 К заявкам", callback_data="admin_registrations")
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
