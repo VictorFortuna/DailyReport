@@ -49,12 +49,15 @@ async def admin_panel(message: Message, db: DatabaseService):
         await message.answer("❌ Ошибка получения статистики. Проверьте логи.")
         return
 
+    current_time = format_moscow_time(datetime.now(), '%H:%M:%S')
+
     await message.answer(
         f"👨‍💼 <b>Административная панель</b>\n\n"
         f"📅 <b>Дата:</b> {today}\n"
         f"👥 <b>Активных сотрудников:</b> {len(all_users)}\n"
         f"📊 <b>Отчётов за сегодня:</b> {len(today_reports)}\n"
-        f"📈 <b>Процент выполнения:</b> {round(len(today_reports) / len(all_users) * 100) if all_users else 0}%\n\n"
+        f"📈 <b>Процент выполнения:</b> {round(len(today_reports) / len(all_users) * 100) if all_users else 0}%\n"
+        f"🔄 <b>Открыто:</b> {current_time}\n\n"
         f"Выберите действие:",
         reply_markup=get_admin_keyboard()
     )
@@ -228,9 +231,38 @@ async def admin_user_details(callback: CallbackQuery, db: DatabaseService):
 async def admin_refresh(callback: CallbackQuery, db: DatabaseService):
     """Обновление админ-панели"""
 
+    logger.info(f"Admin callback {callback.data} from user {callback.from_user.id}")
+
     if not is_admin(callback.from_user.id):
+        logger.warning(f"Unauthorized admin callback {callback.data} attempt by {callback.from_user.id}")
         await callback.answer("❌ Доступ запрещён", show_alert=True)
         return
 
-    await admin_panel(callback.message, db)
+    # Генерируем админ-панель напрямую (без вызова admin_panel с callback.message)
+    today = datetime.now().strftime('%d.%m.%Y')
+
+    try:
+        # Получаем базовую статистику
+        all_users = await db.get_all_users(active_only=True)
+        today_reports = await db.get_daily_reports(datetime.now().strftime('%Y-%m-%d'))
+        logger.info(f"Admin stats: {len(all_users)} users, {len(today_reports)} reports")
+    except Exception as e:
+        logger.error(f"Error getting admin stats: {e}")
+        await callback.message.edit_text("❌ Ошибка получения статистики. Проверьте логи.")
+        await callback.answer()
+        return
+
+    # Добавляем временную метку чтобы избежать ошибки "message is not modified"
+    current_time = format_moscow_time(datetime.now(), '%H:%M:%S')
+
+    await callback.message.edit_text(
+        f"👨‍💼 <b>Административная панель</b>\n\n"
+        f"📅 <b>Дата:</b> {today}\n"
+        f"👥 <b>Активных сотрудников:</b> {len(all_users)}\n"
+        f"📊 <b>Отчётов за сегодня:</b> {len(today_reports)}\n"
+        f"📈 <b>Процент выполнения:</b> {round(len(today_reports) / len(all_users) * 100) if all_users else 0}%\n"
+        f"🔄 <b>Обновлено:</b> {current_time}\n\n"
+        f"Выберите действие:",
+        reply_markup=get_admin_keyboard()
+    )
     await callback.answer("✅ Обновлено")
